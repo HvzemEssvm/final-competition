@@ -1,2 +1,2 @@
 # Ball detection
-# Trained with **ultralytics yolov8s**
+## Trained with **ultralytics yolov8s**
