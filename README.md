@@ -1,1 +1,2 @@
-# final-competition
+# Ball detection
+# Trained with **ultralytics yolov8s**
