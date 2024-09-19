@@ -20,6 +20,7 @@
 import rospy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Bool
+from std_msgs.msg import Float32
 from cv_bridge import CvBridge #CvBridge is a ROS utility that helps bridge the gap between ROS image messages and OpenCV images.
 from ultralytics import YOLO   
 import numpy
@@ -35,6 +36,12 @@ fx = 606  # Focal length x-axis
 fy = 589  # Focal length y-axis
 cx = 319.5  # Principal points
 cy = 239.5
+
+
+ball_depth_pub = rospy.Publisher('/ball_depth', Float32, queue_size=10)  # Publishes the depth of the nearest ball
+ball_detected_pub = rospy.Publisher('/ball_detected', Bool, queue_size=10)  # Publishes if a ball is detected
+
+
 
 def rgbCV_converter(rgb_img):
     global rgbCV_img
@@ -54,7 +61,8 @@ def ball_tracker():
     ball_detected = False
     if boxes_num != 0 :
         ball_detected = True
-        # Add here the channel to publish on the boolean ball_detected True
+        # (done)Add here the channel to publish on the boolean ball_detected True
+        ball_detected_pub.publish(ball_detected)  # Publish ball_detected as True
         i=0
         min_depth = float('inf')
         for r in results:
@@ -63,8 +71,8 @@ def ball_tracker():
                 classes_id = r.boxes.id.cpu().numpy()
 
                 id 
-                Xcenter = coordinates[i][0]
-                Ycenter = coordinates[i][1]
+                Xcenter = int(coordinates[i][0])
+                Ycenter = int(coordinates[i][1])
                 z = depthCV_img[Ycenter,Xcenter] # in mm
 
                 if z == 0 or not numpy.isfinite(z):  # Handle invalid depth
@@ -84,6 +92,7 @@ def ball_tracker():
                     Ynear = Ycamera
                     Znear = z # in mm
                     # these info above could be used to return the nearest ball at the current frame (POV)
+                    ball_depth_pub.publish(Znear) # publish the Znear
                 rospy.loginfo(f"Ball id {classes_id}=detected at 3D coordinates: ({Xcamera}, {Ycamera}, {z} mm)") #for debugging
                 i+=1
         return
@@ -91,8 +100,13 @@ def ball_tracker():
         ball_detected = False
         rospy.loginfo("No ball detected")
         # Add here the channel to publish on the boolean ball_detected True
+        ball_detected_pub.publish(ball_detected)
         return
     
 rgb_sub = rospy.Subscriber('/camera/rgb/image_raw', Image, rgbCV_converter)
 depth_sub = rospy.Subscriber('/camera/depth/image_raw', Image, depthCV_converter)
 
+
+rospy.init_node('ball_tracker_node', anonymous=True)
+while True:
+    ball_tracker()
