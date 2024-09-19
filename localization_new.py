@@ -16,14 +16,16 @@ class RobotNavigator:
         self.imu_sub = rospy.Subscriber('/imu', Imu, self.imu_callback)
         self.move_ball=rospy.Publisher('/move', Bool,queue_size=10)
         self.robot_x = 0
-        self.robot_y = 0.22  # initial position of the robot
+        self.robot_y = 0  
+        self.origin_shift_x=0
+        self.origin_shift_y=0.22
         self.ball_detected = False
         self.current_orientation = 0  # for the orientation from the IMU
 
     def odom_callback(self, msg):
         # Get robot's position from odom
-        self.robot_x = msg.pose.pose.position.x
-        self.robot_y = msg.pose.pose.position.y
+        self.robot_x = msg.pose.pose.position.x + self.origin_shift_x
+        self.robot_y = msg.pose.pose.position.y + self.origin_shift_y
         rospy.loginfo("Current position: x={}, y={}".format(self.robot_x, self.robot_y))
         self.check_zone()
 
